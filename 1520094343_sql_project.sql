@@ -2,6 +2,10 @@
 Springboard' online SQL platform, which you can log into through the
 following link:
 
+https://sql.springboard.com/
+Username: student
+Password: learn_sql@springboard
+
 The data you need is in the "country_club" database. This database
 contains 3 tables:
     i) the "Bookings" table,
@@ -78,8 +82,11 @@ FROM Facilities
 /* Q6: You'd like to get the first and last name of the last member(s)
 who signed up. Do not use the LIMIT clause for your solution. 
 
-Doubt :(SELECT * FROM Bookings b,Members m where m.memid=b.memid
-order by starttime desc) 
+SELECT surname, firstname
+FROM  `Members` 
+WHERE joindate = ( 
+SELECT MAX( joindate ) 
+FROM  `Members` )
 
 
 */
@@ -109,14 +116,37 @@ the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. 
 
-There is no single booking on that day 
-select * FROM Members m,Facilities f,Bookings b where b.facid = f.facid and b.memid =m.memid
-and m.joindate like '%2012-14-09%'
+SELECT facilities.name, CONCAT( members.surname,  ' ', members.firstname ) AS member, 
+CASE WHEN signups.memid =0
+THEN facilities.guestcost * signups.slots
+ELSE facilities.membercost * signups.slots
+END AS cost
+FROM  `Bookings` AS signups
+LEFT JOIN  `Facilities` AS facilities ON signups.facid = facilities.facid
+LEFT JOIN  `Members` AS members ON signups.memid = members.memid
+WHERE signups.starttime LIKE  '2012-09-14%'
+AND IF( members.memid =0, facilities.guestcost, facilities.membercost ) * signups.slots >30
+ORDER BY 3 DESC
 
 */
 
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. 
+
+SELECT * 
+FROM (
+SELECT facilities.name, CONCAT( members.surname,  ' ', members.firstname ) AS member, 
+CASE WHEN signups.memid =0
+THEN facilities.guestcost * signups.slots
+ELSE facilities.membercost * signups.slots
+END AS cost
+FROM  `Bookings` AS signups
+LEFT JOIN  `Facilities` AS facilities ON signups.facid = facilities.facid
+LEFT JOIN  `Members` AS members ON signups.memid = members.memid
+WHERE signups.starttime LIKE  '2012-09-14%'
+)sub
+WHERE cost >30
+ORDER BY 3 DESC
 
 */
 
@@ -125,10 +155,15 @@ and m.joindate like '%2012-14-09%'
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! 
 
-SELECT SUM( membercost ) AS mrev, SUM( guestcost ) AS grev, f.name
-FROM Members m, Facilities f, Bookings b
-WHERE b.facid = f.facid
-AND b.memid = m.memid
-GROUP BY f.name
+SELECT facilities.name, SUM( 
+CASE WHEN signups.memid =0
+THEN facilities.guestcost * signups.slots
+ELSE facilities.membercost * signups.slots
+END ) AS revenue
+FROM  `Bookings` AS signups
+LEFT JOIN  `Facilities` AS facilities ON signups.facid = facilities.facid
+GROUP BY 1 
+HAVING revenue <1000
+ORDER BY 2 DESC 
 
 */
